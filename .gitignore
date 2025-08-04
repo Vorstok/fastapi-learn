@@ -38,3 +38,4 @@ migrations/
 # Тестовые окружения
 .coverage
 .tox/
+
