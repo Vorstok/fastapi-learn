@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список книг</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+
+        .error {
+            color: #d32f2f;
+            background-color: #ffebee;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #d32f2f;
+        }
+
+        .book {
+            background: #f9f9f9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            transition: transform 0.2s ease;
+        }
+
+        .book:hover {
+            transform: translateX(5px);
+            background: #f0f8ff;
+        }
+
+        .book-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .book-author {
+            color: #666;
+            font-style: italic;
+        }
+
+        .refresh-btn {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background-color: #45a049;
+        }
+
+        .refresh-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .no-books {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Библиотека книг</h1>
+        <button class="refresh-btn" onclick="loadBooks()">Обновить список</button>
+        <div id="content">
+            <div class="loading">Загрузка книг...</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadBooks() {
+            const contentDiv = document.getElementById('content');
+            const refreshBtn = document.querySelector('.refresh-btn');
+
+            // Показываем индикатор загрузки
+            contentDiv.innerHTML = '<div class="loading">Загрузка книг...</div>';
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = 'Загрузка...';
+
+            try {
+                const response = await fetch('http://localhost:8000/books');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ошибка! статус: ${response.status}`);
+                }
+
+                const books = await response.json();
+                displayBooks(books);
+
+            } catch (error) {
+                console.error('Ошибка при загрузке книг:', error);
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <strong>Ошибка загрузки:</strong> ${error.message}
+                        <br><br>
+                        Убедитесь, что:
+                        <ul>
+                            <li>Бэкенд сервер запущен на http://localhost:8000</li>
+                            <li>Эндпоинт /books доступен</li>
+                            <li>Настроены CORS заголовки на сервере</li>
+                        </ul>
+                    </div>
+                `;
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = 'Обновить список';
+            }
+        }
+
+        function displayBooks(books) {
+            const contentDiv = document.getElementById('content');
+
+            if (!books || books.length === 0) {
+                contentDiv.innerHTML = '<div class="no-books">Книги не найдены</div>';
+                return;
+            }
+
+            let html = '';
+            books.forEach(book => {
+                html += `
+                    <div class="book">
+                        <div class="book-title">${escapeHtml(book.title || 'Без названия')}</div>
+                        <div class="book-author">Автор: ${escapeHtml(book.author || 'Неизвестен')}</div>
+                    </div>
+                `;
+            });
+
+            contentDiv.innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Загружаем книги при загрузке страницы
+        window.addEventListener('DOMContentLoaded', loadBooks);
+    </script>
+</body>
+</html>
